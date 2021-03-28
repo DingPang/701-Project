@@ -15,7 +15,11 @@ import time
 import functools
 import PIL.Image
 from dataclasses import dataclass
+from tqdm import tqdm
 
+# Local Paths for Images
+Style_Path= "./style2.jpg"
+Content_Path = "./content1.jpeg"
 
 def tensor_to_image(tensor):
   tensor = tensor*255
@@ -25,9 +29,6 @@ def tensor_to_image(tensor):
     tensor = tensor[0]
   return PIL.Image.fromarray(tensor)
 
-# Local Paths for Images
-Style_Path= "./style1.jpeg"
-Content_Path = "./content1.jpeg"
 
 #Function to load in an image and limiting the image maximum dimention to 512 pixels.
 def load_img(path_to_img):
@@ -58,10 +59,10 @@ def imshow(image, title=None):
 content_image = load_img(Content_Path)
 style_image = load_img(Style_Path)
 
-# plt.subplot(1, 2, 1)
-# imshow(content_image, 'Content Image')
-# plt.subplot(1, 2, 2)
-# imshow(style_image, 'Style Image')
+plt.subplot(2, 2, 1)
+imshow(content_image, 'Content Image')
+plt.subplot(2, 2, 2)
+imshow(style_image, 'Style Image')
 # plt.show()
 
 x = tf.keras.applications.vgg19.preprocess_input(content_image*255)
@@ -94,13 +95,13 @@ style_outputs = style_extractor(style_image*255)
 
 
 #Look at the statistics of each layer's output
-for name, output in zip(style_layers, style_outputs):
-  print(name)
-  print("  shape: ", output.numpy().shape)
-  print("  min: ", output.numpy().min())
-  print("  max: ", output.numpy().max())
-  print("  mean: ", output.numpy().mean())
-  print()
+# for name, output in zip(style_layers, style_outputs):
+#   print(name)
+#   print("  shape: ", output.numpy().shape)
+#   print("  min: ", output.numpy().min())
+#   print("  max: ", output.numpy().max())
+#   print("  mean: ", output.numpy().mean())
+#   print()
 
 def gram_matrix(input_tensor):
   result = tf.linalg.einsum('bijc,bijd->bcd', input_tensor, input_tensor)
@@ -161,3 +162,70 @@ for name, output in sorted(results['content'].items()):
   print("    min: ", output.numpy().min())
   print("    max: ", output.numpy().max())
   print("    mean: ", output.numpy().mean())
+
+style_targets = extractor(style_image)['style']
+content_targets = extractor(content_image)['content']
+
+image = tf.Variable(content_image)
+
+
+def clip_0_1(image):
+  return tf.clip_by_value(image, clip_value_min=0.0, clip_value_max=1.0)
+
+
+opt = tf.optimizers.Adam(learning_rate=0.02, beta_1=0.99, epsilon=1e-1)
+
+style_weight=1e-2
+content_weight=1e4
+
+def style_content_loss(outputs):
+    style_outputs = outputs['style']
+    content_outputs = outputs['content']
+    style_loss = tf.add_n([tf.reduce_mean((style_outputs[name]-style_targets[name])**2)
+                           for name in style_outputs.keys()])
+    style_loss *= style_weight / num_style_layers
+
+    content_loss = tf.add_n([tf.reduce_mean((content_outputs[name]-content_targets[name])**2)
+                             for name in content_outputs.keys()])
+    content_loss *= content_weight / num_content_layers
+    loss = style_loss + content_loss
+    return loss
+
+
+@tf.function()
+def train_step(image):
+  with tf.GradientTape() as tape:
+    outputs = extractor(image)
+    loss = style_content_loss(outputs)
+
+  grad = tape.gradient(loss, image)
+  opt.apply_gradients([(grad, image)])
+  image.assign(clip_0_1(image))
+
+
+train_step(image)
+train_step(image)
+train_step(image)
+final = tensor_to_image(image)
+plt.subplot(2, 2, 3)
+plt.imshow(final)
+plt.title("Final with 3 iterations")
+
+start = time.time()
+
+max_steps = 100
+
+step = 0
+print("Running Optimization")
+for m in tqdm(range(max_steps)):
+  step += 1
+  train_step(image)
+  display.clear_output(wait=True)
+end = time.time()
+
+print("Total time: {:.1f}".format(end-start))
+finalOpt = tensor_to_image(image)
+plt.subplot(2, 2, 4)
+plt.imshow(finalOpt)
+plt.title("Final with more iterations")
+plt.show()
