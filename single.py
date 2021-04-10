@@ -66,6 +66,7 @@ imshow(style_image, 'Style Image')
 # plt.show()
 
 x = tf.keras.applications.vgg19.preprocess_input(content_image*255)
+# Resize to 224 by 224 for vgg19
 x = tf.image.resize(x, (224, 224))
 # Load Pre-trained VGG19
 # This would require a "good" certificate
@@ -197,7 +198,6 @@ def train_step(image):
   with tf.GradientTape() as tape:
     outputs = extractor(image)
     loss = style_content_loss(outputs)
-
   grad = tape.gradient(loss, image)
   opt.apply_gradients([(grad, image)])
   image.assign(clip_0_1(image))
