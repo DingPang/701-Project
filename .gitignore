@@ -131,3 +131,5 @@ dmypy.json
 # Images
 *.pdf
 *.docx
+
+Single_Feed_Forward/data/
