@@ -37,11 +37,7 @@ fruitpath = "./fruits-360/test-multiple_fruits/"
 content_images = tf.concat([load_img(content_paths[0])], axis = 0)
 sty_img = tf.concat([load_img(style_paths[0])], axis = 0)
 #print(sty_img)
-
-
-
 model_dir = "./models/"
-
 vgg = VGG(content_layer, style_layers)
 transformer = TransferNet(content_layer)
 
@@ -116,7 +112,6 @@ def mean_standard_loss(feature, feature_styled, epsilon = 1e-5):
         featured_styled_std, featured_std
     )
     return loss
-
 def style_loss(feature, feature_styled):
     return tf.reduce_sum(
         [
@@ -155,6 +150,7 @@ def train_step(content_image, style_image):
         avg_train_content_loss(total_content_loss)
 
 for step, content_images in tqdm(enumerate(ds_fruit)):
+
     train_step(content_images, sty_img)
     if step % 10 == 0:
         with summary_writer.as_default():
