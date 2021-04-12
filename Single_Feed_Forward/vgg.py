@@ -1,5 +1,8 @@
 import tensorflow as tf
+import os
 from tensorflow.keras.applications import vgg19, VGG19
+os.environ['TFHUB_MODEL_LOAD_FORMAT'] = 'COMPRESSED'
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2' # Only show TensorFlow warnings and errors
 
 class VGG(tf.keras.models.Model):
   def __init__(self, content_layer, style_layers):

@@ -12,7 +12,6 @@ mpl.rcParams['figure.figsize'] = (12, 12)
 mpl.rcParams['axes.grid'] = False
 import numpy as np
 import time
-import functools
 import PIL.Image
 from dataclasses import dataclass
 from tqdm import tqdm
@@ -228,4 +227,5 @@ finalOpt = tensor_to_image(image)
 plt.subplot(2, 2, 4)
 plt.imshow(finalOpt)
 plt.title("Final with more iterations")
-plt.show()
+#plt.show()
+plt.savefig('singleOptResult.png')

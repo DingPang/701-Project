@@ -28,7 +28,7 @@ class TransferNet(tf.keras.Model):
       style_feature_map = self.encoder(style_image)
 
       t = instance_normalization(content_feature_map, style_feature_map)
-      # t = alpha * t + (1 - alpha) * content_feature_map
+      t = alpha * t + (1 - alpha) * content_feature_map
       return t
 
   def decode(self, t):
@@ -44,16 +44,16 @@ def instance_normalization(content_feature_map, style_feature_map, epsilon=1e-5)
     # axes = [1, 2] means instancenorm
     content_mean, content_variance = tf.nn.moments(content_feature_map, axes=[1, 2], keepdims=True)
 
-    # style_mean, style_variance = tf.nn.moments(style_feature_map, axes=[1, 2], keepdims=True)
+    style_mean, style_variance = tf.nn.moments(style_feature_map, axes=[1, 2], keepdims=True)
 
-    # style_std = tf.math.sqrt(style_variance + epsilon)
+    style_std = tf.math.sqrt(style_variance + epsilon)
 
     content_feature_map_norm = tf.nn.batch_normalization(
         content_feature_map,
         mean=content_mean,
         variance=content_variance,
-        offset=None,
-        scale=None,
+        offset=style_std,
+        scale=style_mean,
         variance_epsilon=epsilon,
     )
     return content_feature_map_norm

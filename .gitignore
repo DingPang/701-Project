@@ -132,4 +132,5 @@ dmypy.json
 *.pdf
 *.docx
 
-Single_Feed_Forward/data/
+Single_Feed_Forward/fruits-360/
+Single_Feed_Forward/models/
