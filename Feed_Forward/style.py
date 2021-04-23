@@ -27,6 +27,7 @@ style_image = load_img(style_paths[0])
 content_layer = "block4_conv1"
 transformer = TransferNet(content_layer)
 ckpt = tf.train.Checkpoint(transformer=transformer)
+# ckpt = tf.train.Checkpoint()
 ckpt.restore(tf.train.latest_checkpoint("./models/" )).expect_partial()
 
 styled_image = transformer(content_image, style_image, alpha=1.0)

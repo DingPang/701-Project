@@ -17,11 +17,11 @@ content_paths = ["../content1.jpeg"]
 style_paths = ["../style2.jpg"]
 
 def load_img(file_path):
-    l_img = tf.io.read_file(file_path)
-    l_img = tf.image.decode_jpeg(l_img, channels=3)
-    l_img = tf.cast(l_img, tf.float32)
-    l_img = l_img[tf.newaxis, :]
-    return l_img
+    img = tf.io.read_file(file_path)
+    img = tf.image.decode_jpeg(img, channels=3)
+    img = tf.cast(img, tf.float32)
+    img = img[tf.newaxis, :]
+    return img
 
 #Layers
 content_layer = "block4_conv1"
@@ -31,17 +31,19 @@ style_layers = [
     "block3_conv1",
     "block4_conv1",
 ]
+
 image_size = 256
 
 fruitpath = "./fruits-360/test-multiple_fruits/"
 content_images = tf.concat([load_img(content_paths[0])], axis = 0)
 sty_img = tf.concat([load_img(style_paths[0])], axis = 0)
-#print(sty_img)
+
 model_dir = "./models/"
 vgg = VGG(content_layer, style_layers)
+# Extracte the style features form style image
+# _, style_feature_map = vgg(sty_img)
 transformer = TransferNet(content_layer)
 
-vgg(sty_img)
 
 def resize(img, min_size):
     width, height, _ = tf.unstack(tf.shape(img), num=3)
@@ -141,13 +143,13 @@ def train_step(content_image, style_image):
         )
         loss = total_content_loss + total_style_loss
 
-        gradients = tape.gradient(loss, transformer.trainable_variables)
-        optimizer.apply_gradients(
-            zip(gradients, transformer.trainable_variables)
-        )
-        avg_train_loss(loss)
-        avg_train_style_loss(total_style_loss)
-        avg_train_content_loss(total_content_loss)
+    gradients = tape.gradient(loss, transformer.trainable_variables)
+    optimizer.apply_gradients(
+        zip(gradients, transformer.trainable_variables)
+    )
+    avg_train_loss(loss)
+    avg_train_style_loss(total_style_loss)
+    avg_train_content_loss(total_content_loss)
 
 for step, content_images in tqdm(enumerate(ds_fruit)):
 

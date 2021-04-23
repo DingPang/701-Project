@@ -132,7 +132,7 @@ dmypy.json
 *.pdf
 *.docx
 
-Single_Feed_Forward/fruits-360/
-Single_Feed_Forward/models/
+Feed_Forward/fruits-360/
+Feed_Forward/models/
 
 .DS_Store
