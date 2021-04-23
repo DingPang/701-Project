@@ -134,3 +134,5 @@ dmypy.json
 
 Single_Feed_Forward/fruits-360/
 Single_Feed_Forward/models/
+
+.DS_Store

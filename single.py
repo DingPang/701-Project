@@ -17,7 +17,7 @@ from dataclasses import dataclass
 from tqdm import tqdm
 
 # Local Paths for Images
-Style_Path= "./style2.jpg"
+Style_Path= "./style3.jpeg"
 Content_Path = "./content1.jpeg"
 
 def tensor_to_image(tensor):
@@ -228,4 +228,4 @@ plt.subplot(2, 2, 4)
 plt.imshow(finalOpt)
 plt.title("Final with more iterations")
 #plt.show()
-plt.savefig('singleOptResult.png')
+plt.savefig('singleOptResult2.png')
