@@ -111,10 +111,6 @@ def instance_normalization(content_feature_map, beta, gamma, epsilon=1e-5):
 
         # axes = [1, 2] means instancenorm
     content_mean, content_variance = tf.nn.moments(content_feature_map, axes=[1, 2], keepdims=True)
-    
-   
-    # beta = tf.Variable(initial_value=tf.constant_initializer([0.])(shape=[1]),  trainable=True, name= 'beta' )  
-    # gamma = tf.Variable(initial_value=tf.constant_initializer([1.])(shape=[1]), trainable=True, name= 'gamma')
 
     content_feature_map_norm = tf.nn.batch_normalization(
         content_feature_map,

@@ -11,7 +11,7 @@ from transformer import TransferNet
 AUTOTUNE = tf.data.experimental.AUTOTUNE
 
 
-IN_METHOD = 0  # 0: Single style; 1: Multiple style; 2: Arbitrary style
+IN_METHOD = 2  # 0: Single style; 1: Multiple style; 2: Arbitrary style
 
 #Paths
 content_paths = ["../content1.jpeg"]
@@ -38,11 +38,9 @@ image_size = 256
 fruitpath = "./fruits-360/test-multiple_fruits/"
 content_images = tf.concat([load_img(content_paths[0])], axis = 0)
 sty_img = tf.concat([load_img(style_paths[0])], axis = 0)
-
-model_dir = "./models/"
+style_gallery = "./style_gallery/"
+model_dir = ["./models/single/", "./models/multiple/", "./models/arbitrary/"]
 vgg = VGG(content_layer, style_layers)
-# Extracte the style features form style image
-# _, style_feature_map = vgg(sty_img)
 transformer = TransferNet(content_layer)
 
 
@@ -79,10 +77,21 @@ ds_fruit = (
     .prefetch(AUTOTUNE)
 )
 
+ds_style_gallery = (
+    tf.data.Dataset.list_files(os.path.join(style_gallery, "*.jpg"))
+    .map(content_pre_proc, num_parallel_calls= AUTOTUNE)
+    .apply(tf.data.experimental.ignore_errors())
+    .repeat()
+    .batch(8)
+    .prefetch(AUTOTUNE)
+)
+
+ds = tf.data.Dataset.zip((ds_fruit, ds_style_gallery))
+
 
 optimizer = tf.keras.optimizers.Adam(learning_rate = 0.001)
 checkpt = tf.train.Checkpoint(optimizer = optimizer, transformer = transformer)
-manager = tf.train.CheckpointManager(checkpt, model_dir, max_to_keep = 1)
+manager = tf.train.CheckpointManager(checkpt, model_dir[IN_METHOD], max_to_keep = 1)   #to store the checkpoint in IN_METHOD specific directory
 checkpt.restore(manager.latest_checkpoint)
 if manager.latest_checkpoint:
     print( "Restored from {}".format(manager.latest_checkpoint) )
@@ -95,9 +104,37 @@ avg_train_style_loss = tf.keras.metrics.Mean(name = "avg_train_style_loss")
 avg_train_content_loss = tf.keras.metrics.Mean(name = "avg_train_content_loss")
 
 
+
+
 @tf.function
-def train_step(content_image, style_image):
-    trans = transformer.encode(content_image, style_image, alpha = 1.0)
+def train_step_IN(content_image, style_feature_map):
+    #trans = transformer.encode_IN(content_image, alpha = 1.0)
+    
+    with tf.GradientTape() as tape:
+        trans = transformer.encode_IN(content_image, alpha = 1.0)
+        styled_img = transformer.decode(trans)
+        content_feature_styled, style_feature_styled = vgg(styled_img)
+
+        total_content_loss = 10 * content_loss(
+            trans, content_feature_styled
+        )
+        total_style_loss = 1 * style_loss(
+            style_feature_map, style_feature_styled
+        )
+        loss = total_content_loss + total_style_loss
+    
+    gradients = tape.gradient(loss, transformer.trainable_variables)
+    
+    optimizer.apply_gradients(
+        zip(gradients, transformer.trainable_variables)
+    )
+    avg_train_loss(loss)
+    avg_train_style_loss(total_style_loss)
+    avg_train_content_loss(total_content_loss)
+
+@tf.function
+def train_step_ADAIN(content_image, style_image):
+    trans = transformer.encode_ADAIN(content_image, style_image, alpha = 1.0)
 
     with tf.GradientTape() as tape:
         styled_img = transformer.decode(trans)
@@ -112,44 +149,14 @@ def train_step(content_image, style_image):
             style_feature_map, style_feature_styled
         )
         loss = total_content_loss + total_style_loss
-
-    gradients = tape.gradient(loss, transformer.trainable_variables)
+    
+    gradients = tape.gradient(loss, [v for v in transformer.trainable_variables if not (v.name.startswith("gamma") or v.name.startswith("beta"))] )
     optimizer.apply_gradients(
         zip(gradients, transformer.trainable_variables)
     )
     avg_train_loss(loss)
     avg_train_style_loss(total_style_loss)
-    avg_train_content_loss(total_content_loss)
-
-
-@tf.function
-def train_step_IN(content_image, style_feature_map):
-    #trans = transformer.encode_IN(content_image, alpha = 1.0)
-    
-    with tf.GradientTape(persistent=True, watch_accessed_variables=True) as tape:
-        trans = transformer.encode_IN(content_image, alpha = 1.0)
-        
-        styled_img = transformer.decode(trans)
-
-
-        content_feature_styled, style_feature_styled = vgg(styled_img)
-
-        total_content_loss = 10 * content_loss(
-            trans, content_feature_styled
-        )
-        total_style_loss = 1 * style_loss(
-            style_feature_map, style_feature_styled
-        )
-        loss = total_content_loss + total_style_loss
-    
-    gradients = tape.gradient(loss, transformer.trainable_variables)
-    
-    optimizer.apply_gradients(
-        zip(gradients, transformer.trainable_variables)
-    )
-    avg_train_loss(loss)
-    avg_train_style_loss(total_style_loss)
-    avg_train_content_loss(total_content_loss)
+    avg_train_content_loss(total_content_loss)  
 
 
 if IN_METHOD == 0 :                  # when we have a single style transfer, 
@@ -172,8 +179,12 @@ if IN_METHOD == 0 :                  # when we have a single style transfer,
 
 elif IN_METHOD == 1:             # when we have a multiple style transfer,
     print ("begin multiple style transfer")
-    for step, content_images in tqdm(enumerate(ds_fruit)):
-        train_step(content_images, sty_img)
+   
+
+else:
+    print ("begin arbitrary style transfer")
+    for step, (content_images, style_images) in tqdm(enumerate(ds)):
+        train_step_ADAIN(content_images, style_images)
         if step % 10 == 0:
             print(
                 f"Step {step}, "
@@ -185,6 +196,3 @@ elif IN_METHOD == 1:             # when we have a multiple style transfer,
             avg_train_loss.reset_states()
             avg_train_style_loss.reset_states()
             avg_train_content_loss.reset_states()
-
-else:
-    print ("begin arbitrary style transfer")
