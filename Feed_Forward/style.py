@@ -6,6 +6,8 @@ import matplotlib.image as mpimg
 
 from transformer import TransferNet
 
+IN_METHOD = 0      # 0: IN; 1: CIN; 2: ADAIN
+
 def process_path(file_path):
     img = tf.io.read_file(file_path)
     img = tf.image.decode_jpeg(img, channels=3)
@@ -30,7 +32,7 @@ ckpt = tf.train.Checkpoint(transformer=transformer)
 # ckpt = tf.train.Checkpoint()
 ckpt.restore(tf.train.latest_checkpoint("./models/" )).expect_partial()
 
-styled_image = transformer(content_image, style_image, alpha=1.0)
+styled_image = transformer(content_image, style_image,IN_METHOD, alpha=1.0)
 styled_image = tf.cast(
     tf.squeeze(styled_image), tf.uint8
 ).numpy()
