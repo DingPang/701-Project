@@ -165,21 +165,21 @@ class TransferNet(tf.keras.Model):
 #     )
 
 def decoder():
-        return tf.keras.Sequential([
-            Conv2DTranspose(512, (3, 3), activation="relu", padding='same'),
-            UpSampling2D(size = (2,2)),
-            Conv2DTranspose(256, (3, 3), activation="relu", padding='same'),
-            Conv2DTranspose(256, (3, 3), activation="relu", padding='same'),
-            Conv2DTranspose(256, (3, 3), activation="relu", padding='same'),
-            Conv2DTranspose(256, (3, 3), activation="relu", padding='same'),
-            UpSampling2D(size = (2,2)),
-            Conv2DTranspose(128, (3, 3), activation="relu", padding='same'),
-            Conv2DTranspose(128, (3, 3), activation="relu", padding='same'),
-            UpSampling2D(size = (2,2)),
-            Conv2DTranspose(64, (3, 3), activation="relu", padding='same'),
-            Conv2DTranspose(64, (3, 3), activation="relu", padding='same'),
-            Conv2DTranspose(3, (1, 1))
-        ])
+    return tf.keras.Sequential([
+        Conv2DTranspose(512, (3, 3), activation="relu", padding='same'),
+        UpSampling2D(size = (2,2)),
+        Conv2DTranspose(256, (3, 3), activation="relu", padding='same'),
+        Conv2DTranspose(256, (3, 3), activation="relu", padding='same'),
+        Conv2DTranspose(256, (3, 3), activation="relu", padding='same'),
+        Conv2DTranspose(256, (3, 3), activation="relu", padding='same'),
+        UpSampling2D(size = (2,2)),
+        Conv2DTranspose(128, (3, 3), activation="relu", padding='same'),
+        Conv2DTranspose(128, (3, 3), activation="relu", padding='same'),
+        UpSampling2D(size = (2,2)),
+        Conv2DTranspose(64, (3, 3), activation="relu", padding='same'),
+        Conv2DTranspose(64, (3, 3), activation="relu", padding='same'),
+        Conv2DTranspose(3, (1, 1))
+    ])
         # # print(t.shape)
 
         # y = Conv2DTranspose(512, (3, 3), activation="relu", padding='same')(t)

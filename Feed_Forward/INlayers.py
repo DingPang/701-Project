@@ -5,8 +5,12 @@ import tensorflow as tf
 class IN(tf.keras.layers.Layer):
     def __init__(self):
         super(IN, self).__init__()
-        self.beta = tf.Variable(initial_value=tf.constant_initializer([0.])(shape=[1, 1, 1, 512]),  trainable=True, name= 'beta' )
-        self.gamma = tf.Variable(initial_value=tf.constant_initializer([1.])(shape=[1, 1, 1, 512]), trainable=True, name= 'gamma')
+
+
+    def build(self, input_shape):
+        self.beta = tf.Variable(initial_value= tf.zeros(input_shape[3]),  trainable=True, name= 'beta' )
+        self.gamma = tf.Variable(initial_value= tf.ones(input_shape[3]), trainable=True, name= 'gamma')
+
 
     def call(self, content_feature_map, epsilon=1e-5):
         content_mean, content_variance = tf.nn.moments(content_feature_map, axes=[1, 2], keepdims=True)

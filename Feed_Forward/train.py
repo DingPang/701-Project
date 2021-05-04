@@ -8,7 +8,8 @@ tf.config.run_functions_eagerly(True)
 from losses import style_loss, content_loss
 from vgg import VGG
 from transformer import TransferNet
-from utils import load_img, content_pre_proc, resize
+from utils import load_img, content_pre_proc
+from generator import Net
 
 
 AUTOTUNE = tf.data.experimental.AUTOTUNE
@@ -17,7 +18,7 @@ AUTOTUNE = tf.data.experimental.AUTOTUNE
 IN_METHOD = 0  # 0: Single style; 1: Multiple style; 2: Arbitrary style
 
 #Paths
-style_paths = ["./style_gallery/Abstract_image_119.jpg", "../style2.jpg"]
+style_paths = ["../style2.jpg", "./style_gallery/Abstract_image_119.jpg"]
 
 #Layers
 content_layer = "block4_conv1"
@@ -28,22 +29,39 @@ style_layers = [
     'block4_conv1'
 ]
 
+# Image size
 image_size = 256
 
+# Trainning Content Path
 # fruitpath = "./fruits-360/test-multiple_fruits/"
-fruitpath = "./fruits-360/Training/Apple Braeburn"
+# fruitpath = "./fruits-360/Training Copy"
+trainpath = "./cars"
 
+# Single Trainning Image
 sty_img = tf.concat([load_img(style_paths[0])], axis = 0)
 
+# Arbitrary Trainning Image Dataset
 style_gallery = "./style_gallery/"
+
+# Saved Modle Dirs
 model_dir = ["./models/single/", "./models/multiple/", "./models/arbitrary/"]
+
+# pretrained Feature Extractor model (VGG)
 vgg = VGG(content_layer, style_layers)
-transformer = TransferNet(content_layer, IN_METHOD)
+
+transformer = None
+if IN_METHOD == 0:
+    # single model
+    transformer = Net()
+else:
+    # arbitrary model
+    transformer = TransferNet(content_layer, IN_METHOD)
 
 
-
+# Content Image Dataset
 ds_fruit = (
-    tf.data.Dataset.list_files(os.path.join(fruitpath, "*.jpg"))
+    #tf.data.Dataset.list_files(os.path.join(fruitpath, "*.jpg"))
+    tf.data.Dataset.list_files(os.path.join(trainpath, "*.jpg"))
     .map(content_pre_proc, num_parallel_calls= AUTOTUNE)
     .apply(tf.data.experimental.ignore_errors())
     .repeat()
@@ -51,9 +69,10 @@ ds_fruit = (
     .prefetch(AUTOTUNE)
 )
 
-
+# Style Image Dataset
 ds_style_gallery = (
-    tf.data.Dataset.list_files(os.path.join(style_gallery, "Abstract_image_119.jpg"))
+    # tf.data.Dataset.list_files(os.path.join(style_gallery, "Abstract_image_119.jpg"))
+    tf.data.Dataset.list_files("../style2.jpg")
     .map(content_pre_proc, num_parallel_calls= AUTOTUNE)
     .apply(tf.data.experimental.ignore_errors())
     .repeat()
@@ -61,18 +80,13 @@ ds_style_gallery = (
     .prefetch(AUTOTUNE)
 )
 
-# ds_coco = (
-#     tfds.load("coco/2014", split="train")
-#     .repeat()
-#     .batch(1)
-#     .prefetch(AUTOTUNE)
-# )
-
+# Combined Image Dataset
 ds = tf.data.Dataset.zip((ds_fruit, ds_style_gallery))
 
-
-
+# Setup Adam and checkpt Manager
 optimizer = tf.keras.optimizers.Adam(learning_rate = 3e-4)
+
+# transformer
 checkpt = tf.train.Checkpoint(optimizer = optimizer, transformer = transformer)
 manager = tf.train.CheckpointManager(checkpt, model_dir[IN_METHOD], max_to_keep = 1)   #to store the checkpoint in IN_METHOD specific directory
 checkpt.restore(manager.latest_checkpoint)
@@ -81,24 +95,23 @@ if manager.latest_checkpoint:
 else:
     print("From scratch.")
 
-
-
-
+# Declare losses for easy printing
 avg_train_loss = tf.keras.metrics.Mean(name = "avg_train_loss")
 avg_train_style_loss = tf.keras.metrics.Mean(name = "avg_train_style_loss")
 avg_train_content_loss = tf.keras.metrics.Mean(name = "avg_train_content_loss")
 
 
 
-
+# init single model trainstep function
 @tf.function
 def train_step_IN(content_image, style_feature_map):
     # trans = transformer.encode_IN(content_image, alpha = 1.0)
 
     with tf.GradientTape() as tape:
         #TEST
-        trans = transformer.encode_IN(content_image, alpha = 1.0)
-        styled_img = transformer.decode(trans)
+        # styled_img = net(content_image)
+        content_feature, _ = vgg(content_image)
+        styled_img = transformer(content_image)
         content_feature_styled, style_feature_styled = vgg(styled_img)
 
         # print("break")
@@ -106,16 +119,15 @@ def train_step_IN(content_image, style_feature_map):
         # print([v.shape for v in style_feature_styled])
         # print(styled_img.shape)
 
-        total_content_loss = 10 * content_loss(
-            trans, content_feature_styled
+        total_content_loss = content_loss(
+            content_feature, content_feature_styled
         )
-        total_style_loss = 1 * style_loss(
+        total_style_loss = style_loss(
             style_feature_map, style_feature_styled
         )
-        loss = total_content_loss + total_style_loss
-        loss = loss
+        loss = 6e0 * total_content_loss + 2e-3 * total_style_loss
 
-    # print([v.name for v in transformer.trainable_variables])
+    # print([v.name for v in net.trainable_variables])
     gradients = tape.gradient(loss, transformer.trainable_variables)
 
     optimizer.apply_gradients(
@@ -125,6 +137,7 @@ def train_step_IN(content_image, style_feature_map):
     avg_train_style_loss(total_style_loss)
     avg_train_content_loss(total_content_loss)
 
+# Arbitrary Model trainstep
 @tf.function
 def train_step_ADAIN(content_image, style_image):
     trans = transformer.encode_ADAIN(content_image, style_image, alpha = 1.0)
@@ -135,13 +148,13 @@ def train_step_ADAIN(content_image, style_image):
         _, style_feature_map = vgg(style_image)
         content_feature_styled, style_feature_styled = vgg(styled_img)
 
-        total_content_loss = 10 * content_loss(
+        total_content_loss =  content_loss(
             trans, content_feature_styled
         )
-        total_style_loss = 1 * style_loss(
+        total_style_loss = style_loss(
             style_feature_map, style_feature_styled
         )
-        loss = total_content_loss + total_style_loss
+        loss = total_content_loss + 1e-3 * total_style_loss
 
     # gradients = tape.gradient(loss, [v for v in transformer.trainable_variables if not (v.name.startswith("gamma") or v.name.startswith("beta"))] )
     # print([v.name for v in transformer.trainable_variables])
@@ -162,7 +175,6 @@ if IN_METHOD == 0 :                  # when we have a single style transfer,
         # print(content_images)
 
         train_step_IN(content_images, style_feature_map_single)
-
         if step % 10 == 0:
             print(
                 f"Step {step}, "

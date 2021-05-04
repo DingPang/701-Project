@@ -111,7 +111,7 @@ def vgg_layers(layer_names):
   return model
 
 
-# each feature from one layer is in shape (1, pos1, pos2, filter)
+# each feature from one layer is in shape (batchsize=1, pos1, pos2, filters)
 def gram_matrix(input_tensor):
   # Using einsum for gram matrix:
   # k = 1 this never changes
