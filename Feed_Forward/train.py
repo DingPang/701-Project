@@ -15,7 +15,7 @@ from generator import Net
 AUTOTUNE = tf.data.experimental.AUTOTUNE
 
 
-IN_METHOD = 0  # 0: Single style; 1: Multiple style; 2: Arbitrary style
+IN_METHOD = 1 # 0: Single style; 1: Multiple style; 2: Arbitrary style
 
 #Paths
 style_paths = ["../style2.jpg", "./style_gallery/Abstract_image_119.jpg"]
@@ -32,13 +32,16 @@ style_layers = [
 # Image size
 image_size = 256
 
-# Trainning Content Path
+# Training Content Path
 # fruitpath = "./fruits-360/test-multiple_fruits/"
 # fruitpath = "./fruits-360/Training Copy"
 trainpath = "./cars"
 
 # Single Trainning Image
 sty_img = tf.concat([load_img(style_paths[0])], axis = 0)
+
+# Multiple Training Image
+sty_imgs = [ tf.concat([load_img(i)] , axis = 0)  for i in style_paths]
 
 # Arbitrary Trainning Image Dataset
 style_gallery = "./style_gallery/"
@@ -50,8 +53,8 @@ model_dir = ["./models/single/", "./models/multiple/", "./models/arbitrary/"]
 vgg = VGG(content_layer, style_layers)
 
 transformer = None
-if IN_METHOD == 0:
-    # single model
+if IN_METHOD == 0 or IN_METHOD == 1:
+    # single model or multiple style
     transformer = Net()
 else:
     # arbitrary model
@@ -104,14 +107,14 @@ avg_train_content_loss = tf.keras.metrics.Mean(name = "avg_train_content_loss")
 
 # init single model trainstep function
 @tf.function
-def train_step_IN(content_image, style_feature_map):
+def train_step_IN(content_image, style_feature_map, style_indexs):
     # trans = transformer.encode_IN(content_image, alpha = 1.0)
 
     with tf.GradientTape() as tape:
         #TEST
         # styled_img = net(content_image)
         content_feature, _ = vgg(content_image)
-        styled_img = transformer(content_image)
+        styled_img = transformer(content_image, style_indexs)
         content_feature_styled, style_feature_styled = vgg(styled_img)
 
         # print("break")
@@ -174,7 +177,7 @@ if IN_METHOD == 0 :                  # when we have a single style transfer,
     for step, content_images in tqdm(enumerate(ds_fruit)):
         # print(content_images)
 
-        train_step_IN(content_images, style_feature_map_single)
+        train_step_IN(content_images, style_feature_map_single, [1, 0, 0, 0])
         if step % 10 == 0:
             print(
                 f"Step {step}, "
@@ -190,7 +193,27 @@ if IN_METHOD == 0 :                  # when we have a single style transfer,
 
 elif IN_METHOD == 1:             # when we have a multiple style transfer,
     print ("begin multiple style transfer")
-
+    for i in range(len(sty_imgs)):
+        _, style_feature_map_single = vgg(sty_imgs[i])
+        style_indexs = [0, 0, 0, 0]
+        style_indexs[i] = 1
+        for step, content_images in tqdm(enumerate(ds_fruit)):
+            train_step_IN(content_images, style_feature_map_single, style_indexs)
+            if step > 1000:
+                manager.save()
+                break
+            if step % 10 == 0:
+                print ("printing the " + str(i) + "th image")
+                print(
+                    f"Step {step}, "
+                    f"Loss: {avg_train_loss.result()}, "
+                    f"Style Loss: {avg_train_style_loss.result()}, "
+                    f"Content Loss: {avg_train_content_loss.result()}"
+                )
+                print(f"Saved checkpoint: {manager.save()}")
+                avg_train_loss.reset_states()
+                avg_train_style_loss.reset_states()
+                avg_train_content_loss.reset_states()
 
 else:
     print ("begin arbitrary style transfer")
