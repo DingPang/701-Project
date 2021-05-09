@@ -3,22 +3,21 @@ import tensorflow as tf
 from tensorflow.keras.applications import vgg19, VGG19
 from tensorflow.keras.layers import Conv2D, UpSampling2D, Conv2DTranspose
 from tensorflow.python.keras.backend import conv2d
-from INlayers import IN, AdaIn
+from INlayers import IN, CIN
 
 # Conv Layer
 class conv(tf.keras.layers.Layer):
     def __init__(self, filters, kernel, stride):
         super(conv, self).__init__()
         self.conv2d = Conv2D(filters, kernel, stride, use_bias=False, padding='same')
-        self.IN = IN()
+        self.CIN = CIN()
 
-    def call(self, inputs, relu = True):
+    def call(self, inputs, style_indexs, relu = True):
         # Only apply/ activate with ReLu after IN
         x = self.conv2d(inputs)
-        x = self.IN(x)
+        x = self.CIN(x, style_indexs)
         if relu:
             x = tf.nn.relu(x)
-
         return x
 
 class residual(tf.keras.layers.Layer):
@@ -29,9 +28,9 @@ class residual(tf.keras.layers.Layer):
         self.c1 = conv(filters, kernel, stride)
         self.c2 = conv(filters, kernel, stride)
 
-    def call(self, inputs):
-        x = self.c1(inputs)
-        out = inputs + self.c2(x, relu=False)
+    def call(self, inputs, style_indexs):
+        x = self.c1(inputs, style_indexs)
+        out = inputs + self.c2(x, style_indexs, relu=False)
         return tf.nn.relu(out)
 
 # ConvTranspose Layer
@@ -40,18 +39,18 @@ class convT(tf.keras.layers.Layer):
     def __init__(self, filters, kernel, stride):
         super(convT, self).__init__()
         self.convT = conv(filters, kernel, stride)
-        self.instance_norm = IN()
+        self.CIN = CIN()
         self.stride = stride
 
-    def call(self, inputs):
+    def call(self, inputs, style_indexs):
         new_h = inputs.shape[1] * self.stride * 2
         new_w = inputs.shape[2] * self.stride * 2
         x = tf.image.resize(inputs, [new_h, new_w], method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
-        x = self.convT(x)
+        x = self.convT(x, style_indexs)
         # return x
 
         # Redundant
-        x = self.instance_norm(x)
+        x = self.CIN(x, style_indexs)
 
         return tf.nn.relu(x)
 
@@ -74,30 +73,30 @@ class Net(tf.keras.Model):
         self.cT2 = convT(32, 3, 2)
         self.c4 = conv(3, 9, 1)
 
-    def call(self,inputs):
+    def call(self,inputs, style_indexs):
         print(inputs.shape)
-        x = self.c1(inputs)
+        x = self.c1(inputs, style_indexs)
         print(x.shape)
-        x = self.c2(x)
+        x = self.c2(x, style_indexs)
         print(x.shape)
-        x = self.c3(x)
+        x = self.c3(x, style_indexs)
         print(x.shape)
-        x = self.r1(x)
+        x = self.r1(x, style_indexs)
         print(x.shape)
-        x = self.r2(x)
+        x = self.r2(x, style_indexs)
         print(x.shape)
-        x = self.r3(x)
+        x = self.r3(x, style_indexs)
         print(x.shape)
-        x = self.r4(x)
+        x = self.r4(x, style_indexs)
         print(x.shape)
-        x = self.r5(x)
+        x = self.r5(x, style_indexs)
         print(x.shape)
 
-        x = self.cT1(x)
+        x = self.cT1(x, style_indexs)
         print(x.shape)
-        x = self.cT2(x)
+        x = self.cT2(x, style_indexs)
         print(x.shape)
-        x = self.c4(x, relu=False)
+        x = self.c4(x, style_indexs, relu=False)
         print(x.shape)
-        return x
+        return (tf.nn.tanh(x) * 150 + 255. / 2)
 
