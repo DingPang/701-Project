@@ -1,8 +1,6 @@
 import tensorflow as tf
 # tf.config.run_functions_eagerly(True)
-from tensorflow.keras.applications import vgg19, VGG19
 from tensorflow.keras.layers import Conv2D, UpSampling2D, Conv2DTranspose
-from tensorflow.python.keras.backend import conv2d
 from INlayers import IN, CIN
 
 # Conv Layer
@@ -38,18 +36,11 @@ class residual(tf.keras.layers.Layer):
 class convT(tf.keras.layers.Layer):
     def __init__(self, filters, kernel, stride):
         super(convT, self).__init__()
-        self.convT = conv(filters, kernel, stride)
+        self.convT = Conv2DTranspose(filters, kernel, stride, padding='same')
         self.CIN = CIN()
-        self.stride = stride
 
     def call(self, inputs, style_indexs):
-        new_h = inputs.shape[1] * self.stride * 2
-        new_w = inputs.shape[2] * self.stride * 2
-        x = tf.image.resize(inputs, [new_h, new_w], method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
-        x = self.convT(x, style_indexs)
-        # return x
-
-        # Redundant
+        x = self.convT(inputs)
         x = self.CIN(x, style_indexs)
 
         return tf.nn.relu(x)

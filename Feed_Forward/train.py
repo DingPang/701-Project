@@ -5,7 +5,7 @@ import tensorflow as tf
 import tensorflow_datasets as tfds
 tf.config.run_functions_eagerly(True)
 
-from losses import style_loss, content_loss
+from losses import style_loss, content_loss, style_loss_arb
 from vgg import VGG
 from transformer import TransferNet
 from utils import load_img, content_pre_proc
@@ -15,7 +15,7 @@ from generator import Net
 AUTOTUNE = tf.data.experimental.AUTOTUNE
 
 
-IN_METHOD = 1 # 0: Single style; 1: Multiple style; 2: Arbitrary style
+IN_METHOD = 2 # 0: Single style; 1: Multiple style; 2: Arbitrary style
 
 #Paths
 style_paths = ["../style2.jpg", "./style_gallery/Abstract_image_119.jpg"]
@@ -154,7 +154,7 @@ def train_step_ADAIN(content_image, style_image):
         total_content_loss =  content_loss(
             trans, content_feature_styled
         )
-        total_style_loss = style_loss(
+        total_style_loss = style_loss_arb(
             style_feature_map, style_feature_styled
         )
         loss = total_content_loss + 1e-3 * total_style_loss
@@ -216,7 +216,7 @@ elif IN_METHOD == 1:             # when we have a multiple style transfer,
                 avg_train_content_loss.reset_states()
 
 else:
-    print ("begin arbitrary style transfer")
+    print ("begin arbitrary style transfer") # when we have a multiple style transfer,
     for step, (content_images, style_images) in tqdm(enumerate(ds)):
         train_step_ADAIN(content_images, style_images)
         if step % 10 == 0:
