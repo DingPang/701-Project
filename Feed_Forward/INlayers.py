@@ -30,23 +30,25 @@ class CIN(tf.keras.layers.Layer):
 
     def __init__(self ):
         super(CIN, self).__init__()
-        
-    
+
+
     def build(self, input_shape):
         var_shape = input_shape[3]
-        self.betas = []
-        self.gammas = []
-        
-        for i in range(NUM_STYLES) :
-            self.betas.append(tf.Variable(initial_value= tf.zeros(var_shape), trainable=True, name= 'beta' ))
-            self.gammas.append(tf.Variable(initial_value= tf.ones(var_shape), trainable=True, name= 'gamma'))
+        # self.betas = []
+        # self.gammas = []
+
+        for i in range(NUM_STYLES):
+            setattr(self, "beta"+str(i), tf.Variable(initial_value= tf.zeros(var_shape), trainable=True, name= 'beta' + str(i)))
+            setattr(self, "gamma"+str(i), tf.Variable(initial_value= tf.ones(var_shape), trainable=True, name= 'gamma' + str(i)))
+
 
 
     def call(self, content_feature_map, style_indexs = None, epsilon=1e-5):
-        self.style_indexs = style_indexs
         content_mean, content_variance = tf.nn.moments(content_feature_map, axes=[1, 2], keepdims=True)
-        offset = tf.math.add_n([tf.math.scalar_mul(w , beta) for beta , w in zip( self.betas, self.style_indexs)])
-        scale = tf.math.add_n([tf.math.scalar_mul(w , gamma) for gamma , w in zip( self.gammas, self.style_indexs)])
+        betas = [getattr(self, "beta"+str(i)) for i in range(NUM_STYLES)]
+        gammas = [getattr(self, "gamma"+str(i)) for i in range(NUM_STYLES)]
+        offset = tf.math.add_n([tf.math.scalar_mul(w , beta) for beta , w in zip(betas, style_indexs)])
+        scale = tf.math.add_n([tf.math.scalar_mul(w , gamma) for gamma , w in zip(gammas, style_indexs)])
         content_feature_map_norm = tf.nn.batch_normalization(
             content_feature_map,
             mean=content_mean,

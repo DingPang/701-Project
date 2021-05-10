@@ -1,5 +1,4 @@
 import tensorflow as tf
-import os
 
 image_size = 256
 

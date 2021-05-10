@@ -5,14 +5,6 @@ def gram_matrix(input_tensor):
     input_shape = tf.shape(input_tensor)
     num_positions = tf.cast(input_shape[1]*input_shape[2], tf.float32)
     return result/(num_positions)
-    # batch_size , height, width, filters = input_tensor.shape
-    # features = tf.reshape(input_tensor, (batch_size, height*width, filters))
-
-    # tran_f = tf.transpose(features, perm=[0,2,1])
-    # gram = tf.matmul(tran_f, features)
-    # gram /= tf.cast(height*width, tf.float32)
-
-    # return gram
 
 def mean_standard_loss(feature, feature_styled, epsilon = 1e-5):
     featured_mean, featured_variance = tf.nn.moments(feature, axes = [1,2])

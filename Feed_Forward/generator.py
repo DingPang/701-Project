@@ -32,17 +32,17 @@ class residual(tf.keras.layers.Layer):
         return tf.nn.relu(out)
 
 # ConvTranspose Layer
-
 class convT(tf.keras.layers.Layer):
     def __init__(self, filters, kernel, stride):
         super(convT, self).__init__()
         self.convT = Conv2DTranspose(filters, kernel, stride, padding='same')
-        self.CIN = CIN()
+        # self.CIN = CIN()
+        # self.up = UpSampling2D(size = (2,2))
 
     def call(self, inputs, style_indexs):
         x = self.convT(inputs)
-        x = self.CIN(x, style_indexs)
-
+        # x = self.CIN(x, style_indexs)
+        # x = self.up(x)
         return tf.nn.relu(x)
 
 
@@ -51,9 +51,13 @@ class Net(tf.keras.Model):
     def __init__(self):
         super(Net, self).__init__()
         # Encoder
-        self.c1 = conv(32, 9, 1)
-        self.c2 = conv(64, 3, 2)
-        self.c3 = conv(128, 3, 2)
+        # self.c1 = conv(32, 9, 1)
+        # self.c2 = conv(64, 3, 2)
+        # self.c3 = conv(128, 3, 2)
+        self.c1 = Conv2D(32, 9, 1, activation="relu", padding='same')
+        self.c2 = Conv2D(64, 3, 2, activation="relu", padding='same')
+        self.c3 = Conv2D(128, 3, 2, activation="relu", padding='same')
+
         self.r1 = residual(128, 3, 1)
         self.r2 = residual(128, 3, 1)
         self.r3 = residual(128, 3, 1)
@@ -63,31 +67,24 @@ class Net(tf.keras.Model):
         self.cT1 = convT(64, 3, 2)
         self.cT2 = convT(32, 3, 2)
         self.c4 = conv(3, 9, 1)
+        # self.c4 = Conv2D(3, 9, 1, padding='same')
+
 
     def call(self,inputs, style_indexs):
-        print(inputs.shape)
-        x = self.c1(inputs, style_indexs)
-        print(x.shape)
-        x = self.c2(x, style_indexs)
-        print(x.shape)
-        x = self.c3(x, style_indexs)
-        print(x.shape)
+        # x = self.c1(inputs, style_indexs)
+        # x = self.c2(x, style_indexs)
+        # x = self.c3(x, style_indexs)
+        x = self.c1(inputs)
+        x = self.c2(x)
+        x = self.c3(x)
         x = self.r1(x, style_indexs)
-        print(x.shape)
         x = self.r2(x, style_indexs)
-        print(x.shape)
         x = self.r3(x, style_indexs)
-        print(x.shape)
         x = self.r4(x, style_indexs)
-        print(x.shape)
         x = self.r5(x, style_indexs)
-        print(x.shape)
 
         x = self.cT1(x, style_indexs)
-        print(x.shape)
         x = self.cT2(x, style_indexs)
-        print(x.shape)
         x = self.c4(x, style_indexs, relu=False)
-        print(x.shape)
         return (tf.nn.tanh(x) * 150 + 255. / 2)
 

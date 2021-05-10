@@ -1,8 +1,6 @@
 import os
-from argparse import ArgumentParser
 from tqdm import tqdm
 import tensorflow as tf
-import tensorflow_datasets as tfds
 tf.config.run_functions_eagerly(True)
 
 from losses import style_loss, content_loss, style_loss_arb
@@ -18,7 +16,9 @@ AUTOTUNE = tf.data.experimental.AUTOTUNE
 IN_METHOD = 2 # 0: Single style; 1: Multiple style; 2: Arbitrary style
 
 #Paths
-style_paths = ["../style2.jpg", "./style_gallery/Abstract_image_119.jpg"]
+style_paths = ["../la_muse.jpeg",
+            "../starry_night_full.jpeg",
+            "../style3.jpeg"]
 
 #Layers
 content_layer = "block4_conv1"
@@ -33,14 +33,13 @@ style_layers = [
 image_size = 256
 
 # Training Content Path
-# fruitpath = "./fruits-360/test-multiple_fruits/"
-# fruitpath = "./fruits-360/Training Copy"
+fruitpath = "./fruits-360/test-multiple_fruits/"
 trainpath = "./cars"
 
 # Single Trainning Image
 sty_img = tf.concat([load_img(style_paths[0])], axis = 0)
 
-# Multiple Training Image
+# Multiple Training Images
 sty_imgs = [ tf.concat([load_img(i)] , axis = 0)  for i in style_paths]
 
 # Arbitrary Trainning Image Dataset
@@ -62,7 +61,7 @@ else:
 
 
 # Content Image Dataset
-ds_fruit = (
+ds_train = (
     #tf.data.Dataset.list_files(os.path.join(fruitpath, "*.jpg"))
     tf.data.Dataset.list_files(os.path.join(trainpath, "*.jpg"))
     .map(content_pre_proc, num_parallel_calls= AUTOTUNE)
@@ -71,10 +70,17 @@ ds_fruit = (
     .batch(1)
     .prefetch(AUTOTUNE)
 )
+ds_fruit = (
+    tf.data.Dataset.list_files(os.path.join(fruitpath, "*.jpg"))
+    .map(content_pre_proc, num_parallel_calls= AUTOTUNE)
+    .apply(tf.data.experimental.ignore_errors())
+    .repeat()
+    .batch(1)
+    .prefetch(AUTOTUNE)
+)
 
-# Style Image Dataset
+# Style Image Dataset (with only one image...)
 ds_style_gallery = (
-    # tf.data.Dataset.list_files(os.path.join(style_gallery, "Abstract_image_119.jpg"))
     tf.data.Dataset.list_files("../style2.jpg")
     .map(content_pre_proc, num_parallel_calls= AUTOTUNE)
     .apply(tf.data.experimental.ignore_errors())
@@ -117,11 +123,6 @@ def train_step_IN(content_image, style_feature_map, style_indexs):
         styled_img = transformer(content_image, style_indexs)
         content_feature_styled, style_feature_styled = vgg(styled_img)
 
-        # print("break")
-        # print([v.shape for v in style_feature_map])
-        # print([v.shape for v in style_feature_styled])
-        # print(styled_img.shape)
-
         total_content_loss = content_loss(
             content_feature, content_feature_styled
         )
@@ -130,7 +131,6 @@ def train_step_IN(content_image, style_feature_map, style_indexs):
         )
         loss = 6e0 * total_content_loss + 2e-3 * total_style_loss
 
-    # print([v.name for v in net.trainable_variables])
     gradients = tape.gradient(loss, transformer.trainable_variables)
 
     optimizer.apply_gradients(
@@ -157,10 +157,8 @@ def train_step_ADAIN(content_image, style_image):
         total_style_loss = style_loss_arb(
             style_feature_map, style_feature_styled
         )
-        loss = total_content_loss + 1e-3 * total_style_loss
+        loss = total_content_loss + 10 * total_style_loss
 
-    # gradients = tape.gradient(loss, [v for v in transformer.trainable_variables if not (v.name.startswith("gamma") or v.name.startswith("beta"))] )
-    # print([v.name for v in transformer.trainable_variables])
     gradients = tape.gradient(loss, transformer.trainable_variables)
     optimizer.apply_gradients(
         zip(gradients, transformer.trainable_variables)
@@ -216,7 +214,7 @@ elif IN_METHOD == 1:             # when we have a multiple style transfer,
                 avg_train_content_loss.reset_states()
 
 else:
-    print ("begin arbitrary style transfer") # when we have a multiple style transfer,
+    print ("begin arbitrary style transfer")
     for step, (content_images, style_images) in tqdm(enumerate(ds)):
         train_step_ADAIN(content_images, style_images)
         if step % 10 == 0:
