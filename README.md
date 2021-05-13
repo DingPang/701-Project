@@ -24,6 +24,6 @@ pip install -r requirements.txt
 ## How to use:
 1. First, change the IN_Method in style.py to select the desired model
 1. ```bash
-cd Feed_Forward/
-python3 style.py
-```
+    cd Feed_Forward/
+    python3 style.py
+    ```
