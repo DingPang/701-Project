@@ -131,3 +131,11 @@ dmypy.json
 # Images
 *.pdf
 *.docx
+
+Feed_Forward/fruits-360/
+Feed_Forward/style_gallery/
+Feed_Forward/models/
+
+.DS_Store
+cars/
+
