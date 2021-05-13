@@ -1,3 +1,7 @@
+"""
+Author: Ding Pang & Mark Wu
+This is a file that contains image Processing functions for this project
+"""
 import tensorflow as tf
 
 image_size = 256

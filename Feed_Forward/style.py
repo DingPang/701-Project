@@ -1,5 +1,8 @@
+"""
+Author: Ding Pang & Mark Wu
+This is a file that stylize an image by using one of the feedforward models.
+"""
 import tensorflow as tf
-
 from PIL import Image
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
@@ -10,7 +13,7 @@ from transformer import TransferNet
 from generator import Net
 from utils import load_img
 
-IN_METHOD = 2      # 0: IN; 1: CIN; 2: ADAIN
+IN_METHOD = 0      # 0: IN; 1: CIN; 2: ADAIN
 
 model_dir = ["./models/single/",
             "./models/multiple/",

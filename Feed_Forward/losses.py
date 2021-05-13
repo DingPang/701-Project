@@ -1,5 +1,8 @@
+"""
+Author: Ding Pang & Mark Wu
+This is a file that contains different loss functions accroding to their corresponding paper.
+"""
 import tensorflow as tf
-
 def gram_matrix(input_tensor):
     result = tf.linalg.einsum('kijc,kijd->kcd', input_tensor, input_tensor)
     input_shape = tf.shape(input_tensor)

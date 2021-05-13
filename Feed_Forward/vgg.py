@@ -1,3 +1,8 @@
+"""
+Author: Ding Pang & Mark Wu
+This is a file that contains vgg model/network for calculating losses in training
+all feedforward models in this project
+"""
 import tensorflow as tf
 import os
 from tensorflow.keras.applications import vgg19, VGG19

@@ -1,3 +1,9 @@
+"""
+Author: Ding Pang & Mark Wu
+This is a file that can train various NST feedforward models for
+Some Ideas are borrowed from :
+https://github.com/emla2805/arbitrary-style-transfer
+"""
 import os
 from tqdm import tqdm
 import tensorflow as tf
@@ -13,7 +19,7 @@ from generator import Net
 AUTOTUNE = tf.data.experimental.AUTOTUNE
 
 
-IN_METHOD = 2 # 0: Single style; 1: Multiple style; 2: Arbitrary style
+IN_METHOD = 0 # 0: Single style; 1: Multiple style; 2: Arbitrary style
 
 #Paths
 style_paths = ["../la_muse.jpeg",
@@ -111,7 +117,7 @@ avg_train_content_loss = tf.keras.metrics.Mean(name = "avg_train_content_loss")
 
 
 
-# init single model trainstep function
+# single/multiple model trainstep function
 @tf.function
 def train_step_IN(content_image, style_feature_map, style_indexs):
     # trans = transformer.encode_IN(content_image, alpha = 1.0)
@@ -178,16 +184,17 @@ if IN_METHOD == 0 :                  # when we have a single style transfer,
         train_step_IN(content_images, style_feature_map_single, [1, 0, 0, 0])
         if step % 10 == 0:
             print(
-                f"Step {step}, "
-                f"Loss: {avg_train_loss.result()}, "
-                f"Style Loss: {avg_train_style_loss.result()}, "
-                f"Content Loss: {avg_train_content_loss.result()}"
+                "Step: {},   Loss: {},   Style Loss: {},   Content Loss: {}".format(
+                    step,
+                    avg_train_loss.result(),
+                    avg_train_style_loss.result(),
+                    avg_train_content_loss.result()
+                )
             )
-            print(f"Saved checkpoint: {manager.save()}")
+            print("Saved checkpoint: {}".format(manager.save()))
             avg_train_loss.reset_states()
             avg_train_style_loss.reset_states()
             avg_train_content_loss.reset_states()
-            # print([v for v in transformer.trainable_variables if (v.name.startswith("gamma") or v.name.startswith("beta"))])
 
 elif IN_METHOD == 1:             # when we have a multiple style transfer,
     print ("begin multiple style transfer")
@@ -203,12 +210,14 @@ elif IN_METHOD == 1:             # when we have a multiple style transfer,
             if step % 10 == 0:
                 print ("printing the " + str(i) + "th image")
                 print(
-                    f"Step {step}, "
-                    f"Loss: {avg_train_loss.result()}, "
-                    f"Style Loss: {avg_train_style_loss.result()}, "
-                    f"Content Loss: {avg_train_content_loss.result()}"
+                    "Step: {},   Loss: {},   Style Loss: {},   Content Loss: {}".format(
+                        step,
+                        avg_train_loss.result(),
+                        avg_train_style_loss.result(),
+                        avg_train_content_loss.result()
+                    )
                 )
-                print(f"Saved checkpoint: {manager.save()}")
+                print("Saved checkpoint: {}".format(manager.save()))
                 avg_train_loss.reset_states()
                 avg_train_style_loss.reset_states()
                 avg_train_content_loss.reset_states()
@@ -219,12 +228,14 @@ else:
         train_step_ADAIN(content_images, style_images)
         if step % 10 == 0:
             print(
-                f"Step {step}, "
-                f"Loss: {avg_train_loss.result()}, "
-                f"Style Loss: {avg_train_style_loss.result()}, "
-                f"Content Loss: {avg_train_content_loss.result()}"
+                "Step: {},   Loss: {},   Style Loss: {},   Content Loss: {}".format(
+                    step,
+                    avg_train_loss.result(),
+                    avg_train_style_loss.result(),
+                    avg_train_content_loss.result()
+                )
             )
-            print(f"Saved checkpoint: {manager.save()}")
+            print("Saved checkpoint: {}".format(manager.save()))
             avg_train_loss.reset_states()
             avg_train_style_loss.reset_states()
             avg_train_content_loss.reset_states()

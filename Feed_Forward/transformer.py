@@ -1,3 +1,11 @@
+"""
+Author: Ding Pang & Mark Wu
+This is a file that contains NST modle for Arbitrary Transfer
+Based on Paper: https://arxiv.org/abs/1703.06868
+Some Ideas are borrowed from :
+https://github.com/emla2805/arbitrary-style-transfer
+"""
+
 import tensorflow as tf
 # tf.config.run_functions_eagerly(True)
 from tensorflow.keras.applications import vgg19, VGG19
@@ -46,12 +54,6 @@ class TransferNet(tf.keras.Model):
 
     # This function is not in use
     def encode_CIN(self, content_image, style_image, alpha):
-        # content_feature_map = self.encoder(content_image)
-        # style_feature_map = self.encoder(style_image)
-
-        # t = instance_normalization(content_feature_map, style_feature_map)
-        # t = alpha * t + (1 - alpha) * content_feature_map
-        # return t
         return 0
 
     # Utilize Adain to encode input images
