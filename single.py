@@ -1,7 +1,8 @@
 '''
+Author: Mark Wu; Ding Pang
 This is adapted from tensorflow's official tutorial on NST:
 https://www.tensorflow.org/tutorials/generative/style_transfer
-Mark Wu; Ding Pang
+
 '''
 import os
 from numpy.matrixlib.defmatrix import matrix
