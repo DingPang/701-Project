@@ -21,6 +21,12 @@ pip install -r requirements.txt
 1. Python: 3
 1. tensorflow: 2.4.1 (Cannot be v1)
 
+### Used Datasets:
+1. fruits-360: https://www.kaggle.com/moltean/fruits?select=fruits-360
+1. The Car Connection Picture Dataset: https://www.kaggle.com/prondeau/the-car-connection-picture-dataset
+
+After downloading, move them into Feed_Forward/, and make sure the car dataset has the name cars ("Feed_Forward/cars/")
+
 ## How to use:
 1. First, change the IN_Method in style.py to select the desired model
 1. ```bash
